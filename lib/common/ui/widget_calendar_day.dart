@@ -9,6 +9,7 @@ class CalendarDay extends StatelessWidget {
     required this.dDate,
     required this.nGridIndex,
     required this.nSelectedIndex,
+    required this.dSelectedDate,
     required this.sMonthType,
     required this.jKorHolidays,
   });
@@ -16,6 +17,7 @@ class CalendarDay extends StatelessWidget {
   final DateTime dDate;
   final int nGridIndex;
   final int nSelectedIndex;
+  final DateTime dSelectedDate;
   final String sMonthType; // 저번달:"0", 이번달:"1", 다음달:"2"
   final String jKorHolidays; // 공휴일 api 정보(json String)
 
@@ -23,9 +25,17 @@ class CalendarDay extends StatelessWidget {
   Widget build(BuildContext context) {
     String sWeek = DateFormat("E", "ko_KR").format(dDate);
     Color oTextColor = Colors.black;
-    Color oBoxColor = Colors.white60;
-    Color oBoxBorderColor = Colors.white60;
+    Color oBoxColor = Colors.white;
+    Color oBoxBorderColor = Colors.white;
     String sDateName = "", sIsHoliday = "";
+
+    // debugPrint("-------------------------");
+    // debugPrint("dDate : $dDate");
+    // debugPrint("nGridIndex : $nGridIndex");
+    // debugPrint("nSelectedIndex : $nSelectedIndex");
+    // debugPrint("dSelectedDate : $dSelectedDate");
+    // debugPrint("sMonthType : $sMonthType");
+    // debugPrint("jKorHolidays : $jKorHolidays");
 
     if (jKorHolidays != "") {
       Map<String, dynamic> oKorHolidays = jsonDecode(jKorHolidays);
@@ -75,7 +85,7 @@ class CalendarDay extends StatelessWidget {
         color: oBoxColor,
         border: Border.all(
           color: oBoxBorderColor,
-          width: 2,
+          width: 1,
         ),
       ),
       child: Column(
