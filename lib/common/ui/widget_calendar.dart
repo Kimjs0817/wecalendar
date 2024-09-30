@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:wecalendar/common/providers/kor_holiday_provider.dart';
 
@@ -16,6 +17,7 @@ class WidgetCalendar extends StatefulWidget {
 }
 
 class _WidgetCalendarState extends State<WidgetCalendar> {
+  final DateTime _oNow = DateTime.now();
   DateTime _oSelectedDate = DateTime.now();
   DateTime? _oTempSelectedDate;
 
@@ -35,8 +37,17 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
   int _nNextMonthDays = 0; // 다음달 월의 전체 일수
 
   final List<DateTime> _aGridDate = []; // 그리드 인덱스 별 날짜를 배열로 저장
-  DateTime _dSelectedDate = DateTime.parse("99991231"); // 그리드뷰에서 선택한 날짜
-  int _nSelectedIndex = -1; // 그리드뷰에서 선택한 인덱스 값
+  bool _isUserSelected = false;
+  DateTime _dCurMonthSelectedDate = DateTime.parse(
+      "99991231"); // 그리드뷰에서 이번달에 현재 선택한 날짜(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+  int _nCurMonthSelectedIndex =
+      -1; // 그리드뷰에서 이번달에 현재 선택한 인덱스 값(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+  DateTime _dPreSelectedDate = DateTime.parse("99991231"); // 그리드뷰에서 이전에 선택한 날짜
+  int _nPreSelectedIndex = -1; // 그리드뷰에서 이전에 선택한 인덱스 값
+  DateTime _dCurSelectedDate = DateTime.parse("99991231"); // 그리드뷰에서 현재 선택한 날짜
+  int _nCurSelectedIndex = -1; // 그리드뷰에서 현재 선택한 인덱스 값
+
+  Map<String, dynamic> oScheduleDate = {};
 
   @override
   void initState() {
@@ -63,27 +74,23 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
       _isKorHolidayApiCall = false;
     }
 
-    return Column(
-      children: [
-        CalendarTitleText(),
-        const SizedBox(
-          height: 10,
-        ),
-        CalendarWeekText(), // 요일 텍스트 표시
-        const SizedBox(
-          height: 10,
-        ),
-        Consumer<KorHolidayProvider>(builder: (context, provider, widget) {
-          // 데이터가 있으면 CalendarGrid 생성
-          if (provider.korHolidays.isNotEmpty) {
-            return CalendarGrid(); // 각 일자 표시
-          }
-          // 데이터가 없으면 CircularProgressIndicator 수행(로딩)
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }),
-      ],
+    return SizedBox(
+      child: Column(
+        children: [
+          CalendarTitleText(), // 년도, 월 선택 버튼 표시
+          CalendarWeekText(), // 요일 텍스트 표시
+          Consumer<KorHolidayProvider>(builder: (context, provider, widget) {
+            // 데이터가 있으면 CalendarGrid 생성
+            if (provider.korHolidays.isNotEmpty) {
+              return CalendarGrid(); // 각 일자 표시
+            }
+            // 데이터가 없으면 CircularProgressIndicator 수행(로딩)
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -92,6 +99,7 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
+          // "<" 버튼
           onPressed: () {
             setState(() {
               fn_setPreMonth(); // 저번달 표시
@@ -110,15 +118,16 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
             child: Text(
               "${"$_oSelectedDate".substring(0, 4)}."
               "${"$_oSelectedDate".substring(5, 7)}",
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 30,
+                fontSize: 30.sp,
                 color: Colors.black,
               ),
             ),
           ),
         ),
         IconButton(
+          // ">" 버튼
           onPressed: () {
             setState(() {
               fn_setNextMonth(); // 다음달 표시
@@ -158,33 +167,49 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
           child: Container(
             color: Colors.white,
             child: SizedBox(
-              height: 300,
+              height: 230.h,
               child: Column(
                 children: [
                   SizedBox(
-                    height: 70,
+                    height: 40.h,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        CupertinoButton(
-                          child: const Text('취소'),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            FocusScope.of(context).unfocus();
-                          },
+                        Container(
+                          // "취소" 버튼
+                          padding: const EdgeInsets.fromLTRB(
+                              10, 0, 0, 0), // left, top, right, bottom
+                          child: CupertinoButton(
+                            child: Text(
+                              '취소',
+                              style: TextStyle(fontSize: 12.sp),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              FocusScope.of(context).unfocus();
+                            },
+                          ),
                         ),
-                        CupertinoButton(
-                          child: const Text('확인'),
-                          onPressed: () {
-                            Navigator.of(context).pop(_oTempSelectedDate);
-                            FocusScope.of(context).unfocus();
-                          },
+                        Container(
+                          // "확인" 버튼
+                          padding: const EdgeInsets.fromLTRB(
+                              0, 0, 10, 0), // left, top, right, bottom
+                          child: CupertinoButton(
+                            child: Text(
+                              '확인',
+                              style: TextStyle(fontSize: 12.sp),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop(_oTempSelectedDate);
+                              FocusScope.of(context).unfocus();
+                            },
+                          ),
                         ),
                       ],
                     ),
                   ),
                   SizedBox(
-                    height: 230,
+                    height: 190.h,
                     child: CupertinoDatePicker(
                       initialDateTime: _oSelectedDate,
                       mode: CupertinoDatePickerMode.monthYear,
@@ -212,43 +237,76 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
   }
 
   Widget CalendarWeekText() {
+    var nHeight = 30.h;
+    var nWidth = 50.w;
+    var oPadding =
+        EdgeInsets.fromLTRB(10.w, 0.h, 0.w, 0.h); // left, top, right, bottom
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('일'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '일',
+            textAlign: TextAlign.left,
+          ),
         ),
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('월'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '월',
+            textAlign: TextAlign.left,
+          ),
         ),
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('화'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '화',
+            textAlign: TextAlign.left,
+          ),
         ),
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('수'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '수',
+            textAlign: TextAlign.left,
+          ),
         ),
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('목'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '목',
+            textAlign: TextAlign.left,
+          ),
         ),
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('금'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '금',
+            textAlign: TextAlign.left,
+          ),
         ),
         Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: const Text('토'),
+          height: nHeight,
+          width: nWidth,
+          padding: oPadding,
+          child: const Text(
+            '토',
+            textAlign: TextAlign.left,
+          ),
         ),
       ],
     );
@@ -269,123 +327,156 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
           i; // ex) key:20240101, value:0
     }
 
-    return Container(
-      child: Expanded(
-        child: GestureDetector(
-          onPanUpdate: (DragUpdateDetails details) {
-            if (details.delta.dx > 0) {
-              sDragDx = "R"; // 오른쪽 스와이프
-            } else {
-              sDragDx = "L"; // 왼쪽 스와이프
-            }
-          },
-          onPanEnd: (DragEndDetails detail) {
-            if (sDragDx == "R") {
-              // 오른쪽 스와이프 시 저번달 표시
-              setState(() {
-                _nSelectedIndex = -1; // 그리드에서 선택된 인덱스 초기화
-                _dSelectedDate = DateTime.parse("99991231");  // 그리드에서 선택된 날짜 초기화
-                fn_setPreMonth();
-              });
-            } else {
-              // 왼쪽 스와이프 시 다음달 표시
-              setState(() {
-                _nSelectedIndex = -1; // 그리드에서 선택된 인덱스 초기화
-                _dSelectedDate = DateTime.parse("99991231");  // 그리드에서 선택된 날짜 초기화
-                fn_setNextMonth();
-              });
-            }
-          },
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7, mainAxisSpacing: 0, crossAxisSpacing: 0),
-            itemCount: 42,
-            itemBuilder: (context, index) {
-              if (index < _nCurrentMonthStartDayOffSet) {
-                // 이전달 일자 표시
-                nPreviousMonthDay = ((_nPreviousMonthDays + 1) -
-                    (_nCurrentMonthStartDayOffSet - index));
-                sFullDate = _sPreYear +
-                    _sPreMonth +
-                    nPreviousMonthDay.toString().padLeft(2, "0");
-                _aGridDate.add(DateTime.parse(sFullDate)); // 해당 일자를 배열에 add
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      //fn_setPreMonth(); // 이전달 표시
-                      _nSelectedIndex = index; // 그리드에서 선택한 인덱스
-                      _dSelectedDate = _aGridDate[index]; // 그리드에서 선택한 날짜
-                    });
-                  },
-                  child: CalendarDay(
-                    dDate: DateTime.parse(sFullDate),
-                    nGridIndex: index,
-                    nSelectedIndex: _nSelectedIndex,
-                    dSelectedDate: _dSelectedDate,
-                    sMonthType: "0", // 저번달:"0", 이번달:"1", 다음달:"2"
-                    jKorHolidays: "", // 공휴일 api 정보(json String)
-                  ),
-                );
-              } else if (nCurrentMonthDay < _nCurrentMonthDays) {
-                // 이번달 일자 표시
-                nCurrentMonthDay++;
-                sFullDate = _sCurYear +
-                    _sCurMonth +
-                    nCurrentMonthDay.toString().padLeft(2, "0");
-                _aGridDate.add(DateTime.parse(sFullDate)); // 해당 일자를 배열에 add
-                // 현재 일자가 공휴일 인지 확인
-                int? nKorHolidaysIndex = -1;
-                String sKorHolidaysJson = "";
-                if (_oKorHolidaysindex.containsKey(sFullDate)) {
-                  nKorHolidaysIndex = _oKorHolidaysindex[sFullDate];
-                }
-                if (nKorHolidaysIndex != null && nKorHolidaysIndex > -1) {
-                  sKorHolidaysJson = jsonEncode(
-                      _korHolidayProvider.korHolidays[nKorHolidaysIndex]);
-                }
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _nSelectedIndex = index; // 그리드에서 선택한 인덱스
-                      _dSelectedDate = _aGridDate[index]; // 그리드에서 선택한 날짜
-                    });
-                  },
-                  child: CalendarDay(
-                    dDate: DateTime.parse(sFullDate),
-                    nGridIndex: index,
-                    nSelectedIndex: _nSelectedIndex,
-                    dSelectedDate: _dSelectedDate,
-                    sMonthType: "1", // 저번달:"0", 이번달:"1", 다음달:"2"
-                    jKorHolidays: sKorHolidaysJson, // 공휴일 api 정보(json String)
-                  ),
-                );
-              } else {
-                // 다음달 일자 표시
-                nNextMonthDay++;
-                sFullDate = _sNextYear +
-                    _sNextMonth +
-                    nNextMonthDay.toString().padLeft(2, "0");
-                _aGridDate.add(DateTime.parse(sFullDate)); // 해당 일자를 배열에 add
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      //fn_setNextMonth(); // 다음달 표시
-                      _nSelectedIndex = index; // 그리드에서 선택한 인덱스
-                      _dSelectedDate = _aGridDate[index]; // 그리드에서 선택한 날짜
-                    });
-                  },
-                  child: CalendarDay(
-                    dDate: DateTime.parse(sFullDate),
-                    nGridIndex: index,
-                    nSelectedIndex: _nSelectedIndex,
-                    dSelectedDate: _dSelectedDate,
-                    sMonthType: "2", // 저번달:"0", 이번달:"1", 다음달:"2"
-                    jKorHolidays: "", // 공휴일 api 정보(json String)
-                  ),
-                );
-              }
-            },
+    oScheduleDate = {};
+    oScheduleDate["fromDate"] = "20240905"; // 테스트
+    oScheduleDate["toDate"] = "20241007"; // 테스트
+    String sScheduleJson = jsonEncode(oScheduleDate);
+
+    return Expanded(
+      child: GestureDetector(
+        onPanUpdate: (DragUpdateDetails details) {
+          if (details.delta.dx > 0) {
+            sDragDx = "R"; // 오른쪽 스와이프
+          } else {
+            sDragDx = "L"; // 왼쪽 스와이프
+          }
+        },
+        onPanEnd: (DragEndDetails detail) {
+          if (sDragDx == "R") {
+            // 오른쪽 스와이프 시 저번달 표시
+            setState(() {
+              fn_setPreMonth();
+            });
+          } else {
+            // 왼쪽 스와이프 시 다음달 표시
+            setState(() {
+              fn_setNextMonth();
+            });
+          }
+        },
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            mainAxisSpacing: 0,
+            crossAxisSpacing: 0,
           ),
+          itemCount: 42,
+          itemBuilder: (context, index) {
+            if (index < _nCurrentMonthStartDayOffSet) {
+              // 이전달 일자 표시
+              nPreviousMonthDay = ((_nPreviousMonthDays + 1) -
+                  (_nCurrentMonthStartDayOffSet - index));
+              sFullDate = _sPreYear +
+                  _sPreMonth +
+                  nPreviousMonthDay.toString().padLeft(2, "0");
+              _aGridDate.add(DateTime.parse(sFullDate)); // 해당 일자를 배열에 add
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isUserSelected = true; // 사용자가 일자를 클릭했는지 여부
+                    _nCurMonthSelectedIndex =
+                        index; // 그리드뷰에서 이번달에 현재 선택한 인덱스 값(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+                    _dCurMonthSelectedDate = _aGridDate[
+                        index]; // 그리드뷰에서 이번달에 현재 선택한 날짜(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+                    _nPreSelectedIndex =
+                        _nCurSelectedIndex; // 그리드에서 이전에 선택한 인덱스
+                    _dPreSelectedDate = _dCurSelectedDate; // 그리드에서 이전에 선택한 날짜
+                    _nCurSelectedIndex = index; // 그리드에서 현재 선택한 인덱스
+                    _dCurSelectedDate = _aGridDate[index]; // 그리드에서 현재 선택한 날짜
+                  });
+                },
+                child: CalendarDay(
+                  dDate: DateTime.parse(sFullDate),
+                  nGridIndex: index,
+                  nPreSelectedIndex: _nPreSelectedIndex,
+                  dPreSelectedDate: _dPreSelectedDate,
+                  nCurSelectedIndex: _nCurSelectedIndex,
+                  dCurSelectedDate: _dCurSelectedDate,
+                  sMonthType: "0", // 저번달:"0", 이번달:"1", 다음달:"2"
+                  jKorHolidays: "", // 공휴일 api 정보(json String)
+                  jScheduleDate: sScheduleJson, // 위젯에 표시할 스케쥴 정보(from-to)
+                ),
+              );
+            } else if (nCurrentMonthDay < _nCurrentMonthDays) {
+              // 이번달 일자 표시
+              nCurrentMonthDay++;
+              sFullDate = _sCurYear +
+                  _sCurMonth +
+                  nCurrentMonthDay.toString().padLeft(2, "0");
+              _aGridDate.add(DateTime.parse(sFullDate)); // 해당 일자를 배열에 add
+              // 현재 일자가 공휴일 인지 확인
+              int? nKorHolidaysIndex = -1;
+              String sKorHolidaysJson = "";
+              if (_oKorHolidaysindex.containsKey(sFullDate)) {
+                nKorHolidaysIndex = _oKorHolidaysindex[sFullDate];
+              }
+              if (nKorHolidaysIndex != null && nKorHolidaysIndex > -1) {
+                sKorHolidaysJson = jsonEncode(
+                    _korHolidayProvider.korHolidays[nKorHolidaysIndex]);
+              }
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isUserSelected = true; // 사용자가 일자를 클릭했는지 여부
+                    _nCurMonthSelectedIndex =
+                        index; // 그리드뷰에서 이번달에 현재 선택한 인덱스 값(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+                    _dCurMonthSelectedDate = _aGridDate[
+                        index]; // 그리드뷰에서 이번달에 현재 선택한 날짜(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+                    _nPreSelectedIndex =
+                        _nCurSelectedIndex; // 그리드에서 이전에 선택한 인덱스
+                    _dPreSelectedDate = _dCurSelectedDate; // 그리드에서 이전에 선택한 날짜
+                    _nCurSelectedIndex = index; // 그리드에서 현재 선택한 인덱스
+                    _dCurSelectedDate = _aGridDate[index]; // 그리드에서 현재 선택한 날짜
+                  });
+                },
+                child: CalendarDay(
+                  dDate: DateTime.parse(sFullDate),
+                  nGridIndex: index,
+                  nPreSelectedIndex: _nPreSelectedIndex,
+                  dPreSelectedDate: _dPreSelectedDate,
+                  nCurSelectedIndex: _nCurSelectedIndex,
+                  dCurSelectedDate: _dCurSelectedDate,
+                  sMonthType: "1", // 저번달:"0", 이번달:"1", 다음달:"2"
+                  jKorHolidays: sKorHolidaysJson, // 공휴일 api 정보(json String)
+                  jScheduleDate: sScheduleJson, // 위젯에 표시할 스케쥴 정보(from-to)
+                ),
+              );
+            } else {
+              // 다음달 일자 표시
+              nNextMonthDay++;
+              sFullDate = _sNextYear +
+                  _sNextMonth +
+                  nNextMonthDay.toString().padLeft(2, "0");
+              _aGridDate.add(DateTime.parse(sFullDate)); // 해당 일자를 배열에 add
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isUserSelected = true; // 사용자가 일자를 클릭했는지 여부
+                    _nCurMonthSelectedIndex =
+                        index; // 그리드뷰에서 이번달에 현재 선택한 인덱스 값(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+                    _dCurMonthSelectedDate = _aGridDate[
+                        index]; // 그리드뷰에서 이번달에 현재 선택한 날짜(다시 이번달로 돌아왔을 때 포커스 가기 위함)
+                    _nPreSelectedIndex =
+                        _nCurSelectedIndex; // 그리드에서 이전에 선택한 인덱스
+                    _dPreSelectedDate = _dCurSelectedDate; // 그리드에서 이전에 선택한 날짜
+                    _nCurSelectedIndex = index; // 그리드에서 현재 선택한 인덱스
+                    _dCurSelectedDate = _aGridDate[index]; // 그리드에서 현재 선택한 날짜
+                  });
+                },
+                child: CalendarDay(
+                  dDate: DateTime.parse(sFullDate),
+                  nGridIndex: index,
+                  nPreSelectedIndex: _nPreSelectedIndex,
+                  dPreSelectedDate: _dPreSelectedDate,
+                  nCurSelectedIndex: _nCurSelectedIndex,
+                  dCurSelectedDate: _dCurSelectedDate,
+                  sMonthType: "2", // 저번달:"0", 이번달:"1", 다음달:"2"
+                  jKorHolidays: "", // 공휴일 api 정보(json String)
+                  jScheduleDate: sScheduleJson, // 위젯에 표시할 스케쥴 정보(from-to)
+                ),
+              );
+            }
+          },
         ),
       ),
     );
@@ -433,6 +524,23 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
         _oSelectedDate.year, _oSelectedDate.month); // 이번달 총 일수
     _nNextMonthDays = DateUtils.getDaysInMonth(
         int.parse(_sNextYear), int.parse(_sNextMonth)); // 다음달 총 일수
+
+    if (_isUserSelected == false &&
+        _oNow.month.toString().padLeft(2, "0") == _sCurMonth) {
+      if (_nCurMonthSelectedIndex == -1) {
+        // 현재 달과 같은데 사용자가 선택한 날짜가 없었을 경우 오늘 날짜 박스 표시
+        _dCurSelectedDate = DateTime.now();
+        _nCurSelectedIndex = (_dCurSelectedDate.day - 1);
+      } else {
+        // 현재 달과 같은데 사용자가 선택한 날짜가 있었을 경우 사용자가 선택한 날짜 박스 표시
+        _dCurSelectedDate = _dCurMonthSelectedDate;
+        _nCurSelectedIndex = _nCurMonthSelectedIndex;
+      }
+    } else if (_isUserSelected == false && _oNow.month.toString().padLeft(2, "0") != _sCurMonth) {
+      // 다른 달인 경우에는 1일에 박스 표시
+      _dCurSelectedDate = DateTime.parse("$_sCurYear${_sCurMonth}01");
+      _nCurSelectedIndex = _nCurrentMonthStartDayOffSet;
+    }
   }
 
   /*
@@ -445,6 +553,12 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
     }
     sFullDate = _sPreYear + _sPreMonth + 01.toString().padLeft(2, "0");
     _oSelectedDate = DateTime.parse(sFullDate);
+
+    _nPreSelectedIndex = -1; // 그리드에서 이전에 선택된 인덱스 초기화
+    _dPreSelectedDate = DateTime.parse("99991231"); // 그리드에서 이전에 선택된 날짜 초기화
+    _nCurSelectedIndex = -1; // 그리드에서 현재 선택된 인덱스 초기화
+    _dCurSelectedDate = DateTime.parse("99991231"); // 그리드에서 현재 선택된 날짜 초기화
+    _isUserSelected = false; // 사용자가 일자를 클릭했는지 여부
   }
 
   /*
@@ -457,5 +571,11 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
     }
     sFullDate = _sNextYear + _sNextMonth + 01.toString().padLeft(2, "0");
     _oSelectedDate = DateTime.parse(sFullDate);
+
+    _nPreSelectedIndex = -1; // 그리드에서 이전에 선택된 인덱스 초기화
+    _dPreSelectedDate = DateTime.parse("99991231"); // 그리드에서 이전에 선택된 날짜 초기화
+    _nCurSelectedIndex = -1; // 그리드에서 현재 선택된 인덱스 초기화
+    _dCurSelectedDate = DateTime.parse("99991231"); // 그리드에서 현재 선택된 날짜 초기화
+    _isUserSelected = false; // 사용자가 일자를 클릭했는지 여부
   }
 }

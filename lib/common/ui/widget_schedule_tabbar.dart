@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class WidgetScheduleTabbar extends StatefulWidget {
   const WidgetScheduleTabbar({super.key});
@@ -49,13 +50,13 @@ class _WidgetScheduleTabbarState extends State<WidgetScheduleTabbar>
       TabBar(
         controller: tabController,
         labelColor: Colors.blue,
-        labelStyle: const TextStyle(
-          fontSize: 18,
+        labelStyle: TextStyle(
+          fontSize: 15.sp,
           fontWeight: FontWeight.bold,
         ),
         unselectedLabelColor: Colors.grey,
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 16,
+        unselectedLabelStyle: TextStyle(
+          fontSize: 13.sp,
         ),
         overlayColor: const WidgetStatePropertyAll(
           Colors.transparent, // 탭 클릭시 색깔 표시 안함
@@ -75,61 +76,66 @@ class _WidgetScheduleTabbarState extends State<WidgetScheduleTabbar>
           setState(() {
             _SelectedTabIndex = index;
             scrollController.animateTo(0.toDouble(),
-                duration: const Duration(milliseconds: 500), curve: Curves.ease); // 탭 변경시 스크롤 맨위로 이동
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.ease); // 탭 변경시 스크롤 맨위로 이동
           });
         },
       ),
       if (_SelectedTabIndex == 0) ...[
         // 0번째 탭 표시
         Container(
-          height: 30,
+          height: 22.h,
           padding: const EdgeInsets.fromLTRB(
               2, 2, 2, 1), // left, top, right, bottom,
           child: ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(500, 10),
+              minimumSize: Size(500.w, 10.h),
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5)),
             ),
-            child: const Text(
+            child: Text(
               "일정 추가 하기",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
-        SizedBox(
-          height: 210,
-          child: _ScheduleCutsomList(),
-        ),
+        Expanded(
+          child: _ScheduleCutsomList(), // 스케쥴 목록 표시
+        )
       ],
       if (_SelectedTabIndex == 1) ...[
         // 1번째 탭 표시
         Container(
-          height: 30,
+          height: 22.h,
           padding: const EdgeInsets.fromLTRB(
               2, 2, 2, 1), // left, top, right, bottom,
           child: ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(500, 10),
+              minimumSize: Size(500.w, 10.h),
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5)),
             ),
-            child: const Text(
+            child: Text(
               "공유 추가 하기",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
-        SizedBox(
-          height: 210,
-          child: _ScheduleCutsomList(),
-        ),
+        Expanded(
+          child: _ScheduleCutsomList(), // 스케쥴 목록 표시
+        )
       ]
     ]);
   }
@@ -153,7 +159,7 @@ class _WidgetScheduleTabbarState extends State<WidgetScheduleTabbar>
                     print(index);
                   },
                   child: Container(
-                    height: 70,
+                    height: 55.h,
                     padding: const EdgeInsets.fromLTRB(
                         10, 10, 10, 2), // left, top, right, bottom,
                     color: Colors.transparent,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:wecalendar/common/ui/widget_calendar.dart';
 import 'package:wecalendar/common/ui/widget_schedule_tabbar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -27,14 +28,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(
-            height: 500,
-            child: WidgetCalendar(), // 캘린더 표시
+          SizedBox( // 캘린더 위젯은 크기 고정
+            height: 360.h,
+            child: const WidgetCalendar(), // 캘린더 위젯 표시
           ),
-          SizedBox(
-            height: 306,
+          Expanded( // 나머지 공간은 내 일정으로 표시
             child: CalendarSchedule(), // 내 일정 표시
-          )
+          ),
         ],
       ),
     );
@@ -42,6 +42,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget CalendarSchedule() {
     return Container(
+      padding: const EdgeInsets.fromLTRB(
+        10, 5, 10, 5), // left, top, right, bottom,
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.vertical(
@@ -55,21 +57,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 blurRadius: 10,
                 offset: const Offset(0, 5))
           ]),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                height: 290,
-                width: 420,
-                margin: const EdgeInsets.fromLTRB(
-                    10, 10, 10, 5), // left, top, right, bottom
-                child: const WidgetScheduleTabbar(),
-              ),
-            ],
-          ),
-        ],
-      ),
+      child: const WidgetScheduleTabbar(),
     );
   }
 }

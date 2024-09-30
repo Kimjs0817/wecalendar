@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:wecalendar/common/ui/bottom_navigation_list.dart';
 import 'package:wecalendar/service/ui/calendar_add_schedule.dart';
@@ -44,12 +45,12 @@ class _MainTapViewState extends State<MainTapView>
     return Scaffold(
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: const TextStyle(
+        selectedLabelStyle: TextStyle( // 선택된 탭의 텍스트 스타일
           fontWeight: FontWeight.bold,
-          fontSize: 15,
+          fontSize: 12.sp,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 15,
+        unselectedLabelStyle: TextStyle( // 선택되지 않은 탭의 텍스트 스타일
+          fontSize: 12.sp,
         ),
         selectedItemColor: Colors.lightBlue,
         unselectedItemColor: Colors.black,
@@ -60,7 +61,7 @@ class _MainTapViewState extends State<MainTapView>
         items: navItems.map((item) {
           return BottomNavigationBarItem(
             icon: Icon(
-                _index == item.index ? item.activeIcon : item.inactiveIcon),
+                _index == item.index ? item.activeIcon : item.inactiveIcon,),
             label: item.label,
           );
         }).toList(),
