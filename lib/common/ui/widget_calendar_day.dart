@@ -3,33 +3,31 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:wecalendar/common/function/common_function.dart';
 
 class CalendarDay extends StatelessWidget {
   const CalendarDay({
     super.key,
-    required this.dDate,
+    required this.sCurYear,
+    required this.sCurMonth,
     required this.nGridIndex,
-    required this.nPreSelectedIndex,
-    required this.dPreSelectedDate,
-    required this.nCurSelectedIndex,
-    required this.dCurSelectedDate,
-    required this.sMonthType,
+    required this.jPreSelectedIndex,
+    required this.jCurSelectedIndex,
     required this.jKorHolidays,
     required this.jScheduleDate,
   });
 
-  final DateTime dDate;
+  final String sCurYear;
+  final String sCurMonth;
   final int nGridIndex;
-  final int nPreSelectedIndex;
-  final DateTime dPreSelectedDate;
-  final int nCurSelectedIndex;
-  final DateTime dCurSelectedDate;
-  final String sMonthType; // 저번달:"0", 이번달:"1", 다음달:"2"
+  final String jPreSelectedIndex; // 사용자가 이전에 선택한 인덱스
+  final String jCurSelectedIndex; // 사용자가 현재 선택한 인덱스
   final String jKorHolidays; // 공휴일 api 정보(json String)
   final String jScheduleDate; // 위젯에 표시할 스케쥴 정보(from-to)
 
   @override
   Widget build(BuildContext context) {
+    DateTime dDate = gfn_getIndexToDate(context, sCurYear, sCurMonth, nGridIndex);
     String sWeek = DateFormat("E", "ko_KR").format(dDate);
     Color oTextColor = Colors.black;
     Color oBoxColor = Colors.white;
@@ -47,15 +45,14 @@ class CalendarDay extends StatelessWidget {
 
     String sDateName = "", sIsHoliday = "";
     Map<String, dynamic> oScheduleDate = {};
+    Map<String, dynamic> oUserSelectedIndex = {};
 
     // debugPrint("-------------------------");
-    // debugPrint("dDate : $dDate");
+    // debugPrint("sCurYear : $sCurYear");
+    // debugPrint("sCurMonth : $sCurMonth");
     // debugPrint("nGridIndex : $nGridIndex");
-    // debugPrint("nPreSelectedIndex : $nPreSelectedIndex");
-    // debugPrint("dPreSelectedDate : $dPreSelectedDate");
-    // debugPrint("nCurSelectedIndex : $nCurSelectedIndex");
-    // debugPrint("dCurSelectedDate : $dCurSelectedDate");
-    // debugPrint("sMonthType : $sMonthType");
+    // debugPrint("jPreSelectedIndex : $jPreSelectedIndex");
+    // debugPrint("jCurSelectedIndex : $jCurSelectedIndex");
     // debugPrint("jKorHolidays : $jKorHolidays");
     // debugPrint("jScheduleDate : $jScheduleDate");
 
@@ -67,8 +64,7 @@ class CalendarDay extends StatelessWidget {
 
     if (jScheduleDate != "") {
       oScheduleDate = jsonDecode(jScheduleDate);
-      if (dDate == DateTime.parse(oScheduleDate["fromDate"]) ||
-          dDate == DateTime.parse(oScheduleDate["toDate"])) {
+      if (dDate == DateTime.parse(oScheduleDate["fromDate"]) || dDate == DateTime.parse(oScheduleDate["toDate"])) {
         // 해당 위젯의 일자가 일정의 from일자 또는 to일자와 같을 때
         oBoxColor = Colors.pink.shade50;
         oBoxBorderColor["leftBorderColors"] = Colors.pink.shade50;
@@ -79,8 +75,7 @@ class CalendarDay extends StatelessWidget {
         oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
         oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
         oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
-      } else if (dDate.isAfter(DateTime.parse(oScheduleDate["fromDate"])) &&
-          dDate.isBefore(DateTime.parse(oScheduleDate["toDate"]))) {
+      } else if (dDate.isAfter(DateTime.parse(oScheduleDate["fromDate"])) && dDate.isBefore(DateTime.parse(oScheduleDate["toDate"]))) {
         // 해당 위젯의 일자가 일정의 from일자와 to일자 사이에 있을 때
         oBoxColor = Colors.pink.shade50;
         oBoxBorderColor["leftBorderColors"] = Colors.pink.shade50;
@@ -94,21 +89,25 @@ class CalendarDay extends StatelessWidget {
       }
     }
 
-    if (nGridIndex == nCurSelectedIndex) {
-      // 사용자가 선택한 인덱스는 박스 색깔 변경
-      oBoxColor = Colors.lightBlueAccent;
-      oBoxBorderColor["leftBorderColors"] = Colors.blue;
-      oBoxBorderColor["rightBorderColors"] = Colors.blue;
-      oBoxBorderColor["topBorderColors"] = Colors.blue;
-      oBoxBorderColor["bottomBorderColors"] = Colors.blue;
-      oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
-      oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
-      oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
-      oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
-    }
+    if (jCurSelectedIndex != "") {
+      oUserSelectedIndex = jsonDecode(jCurSelectedIndex);
 
+      // 사용자가 선택한 인덱스는 박스 색깔 변경
+      if(oUserSelectedIndex["fromIndex"] <= nGridIndex && oUserSelectedIndex["toIndex"] >= nGridIndex) {
+        oBoxColor = Colors.lightBlueAccent;
+        oBoxBorderColor["leftBorderColors"] = Colors.lightBlueAccent;
+        oBoxBorderColor["rightBorderColors"] = Colors.lightBlueAccent;
+        oBoxBorderColor["topBorderColors"] = Colors.lightBlueAccent;
+        oBoxBorderColor["bottomBorderColors"] = Colors.lightBlueAccent;
+        oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
+        oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
+        oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
+        oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
+      }
+    }
+    
     // 일자별 텍스트 컬러 지정
-    if (sMonthType == "0" || sMonthType == "2") {
+    if (dDate.month.toString().padLeft(2, "0") != sCurMonth) {
       oTextColor = Colors.grey;
     } else if (sIsHoliday == "Y") {
       oTextColor = Colors.red;
@@ -165,10 +164,9 @@ class CalendarDay extends StatelessWidget {
             children: [
               Container(
                 width: 45.w,
-                padding: const EdgeInsets.fromLTRB(
-                    10, 0, 0, 0), // left, top, right, bottom
+                padding: const EdgeInsets.fromLTRB(10, 0, 0, 0), // left, top, right, bottom
                 child: Text(
-                  dDate.day.toString(),
+                  gfn_getIndexToDate(context, sCurYear, sCurMonth, nGridIndex).day.toString(),
                   style: TextStyle(
                     fontSize: 10.sp,
                     color: oTextColor,
@@ -182,8 +180,7 @@ class CalendarDay extends StatelessWidget {
             children: [
               Container(
                 width: 45.w,
-                padding: const EdgeInsets.fromLTRB(
-                    6, 1, 0, 0), // left, top, right, bottom
+                padding: const EdgeInsets.fromLTRB(6, 1, 0, 0), // left, top, right, bottom
                 child: Text(
                   sDateName,
                   style: TextStyle(
@@ -196,8 +193,7 @@ class CalendarDay extends StatelessWidget {
             ],
           ),
           Container(
-            padding: const EdgeInsets.fromLTRB(
-                10, 3, 0, 0), // left, top, right, bottom
+            padding: const EdgeInsets.fromLTRB(10, 3, 0, 0), // left, top, right, bottom
             child: Row(
               children: [
                 Padding(
@@ -260,14 +256,12 @@ class CalendarDay extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.fromLTRB(
-                10, 3, 0, 0), // left, top, right, bottom
+            padding: const EdgeInsets.fromLTRB(10, 3, 0, 0), // left, top, right, bottom
             child: Row(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(3, 0, 0, 0),
-                  child:
-                  Container(
+                  child: Container(
                     width: 5,
                     height: 5,
                     decoration: BoxDecoration(
@@ -324,11 +318,12 @@ class CalendarDay extends StatelessWidget {
             ),
           ),
           Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.fromLTRB(
-                10, 3, 0, 0), // left, top, right, bottom
-            child: Text("+5", style: TextStyle(fontSize: 5.sp),)
-          ),
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.fromLTRB(10, 3, 0, 0), // left, top, right, bottom
+              child: Text(
+                "+5",
+                style: TextStyle(fontSize: 5.sp),
+              )),
         ],
       ),
     );
