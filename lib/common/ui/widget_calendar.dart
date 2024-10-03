@@ -9,6 +9,7 @@ import 'package:wecalendar/common/function/common_function.dart';
 import 'package:wecalendar/common/providers/kor_holiday_provider.dart';
 
 import 'package:wecalendar/common/ui/widget_calendar_day.dart';
+import 'package:wecalendar/service/ui/calendar_add_schedule.dart';
 
 class WidgetCalendar extends StatefulWidget {
   const WidgetCalendar({super.key});
@@ -24,60 +25,49 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
   KorHolidayProvider _korHolidayProvider = KorHolidayProvider(); // 공휴일 api Provider
 
   bool _isKorHolidayApiCall = true;
-  String _sPreYear = '', _sPreMonth = '';
-  String _sCurYear = '', _sCurMonth = '';
-  String _sNextYear = '', _sNextMonth = '';
+  int _nPreYear = 0, _nPreMonth = 0;
+  int _nCurYear = 0, _nCurMonth = 0;
+  int _nNextYear = 0, _nNextMonth = 0;
 
-  bool _isUserSelected = false; // 사용자 일자 선택 여부
-  Map<String, dynamic> oUserCurSelectedIndex = {}; // 사용자가 현재 선택한 from-to 인덱스 저장
-
-  bool _isUserSelectedFixed = false; // 사용자 일자 선택 여부(달 변경 후 다시 돌아왔을 때 표시하기 위함)
-  Map<String, dynamic> oUserCurSelectedFixedIndex = {}; // 사용자가 현재 선택한 from-to 인덱스 저장(달 변경 후 다시 돌아왔을 때 표시하기 위함)
-  Map<String, dynamic> oUserCurSelectedFixedDate = {}; // 사용자가 현재 선택한 from-to 날짜 저장(달 변경 후 다시 돌아왔을 때 표시하기 위함)
-
-  bool _isAutoSelected = false; // 사용자가 선택한 from 또는 to 인덱스가 다른 달과 겹쳐있을 경우, 달 변경 시 자동으로 선택됬는지 여부
-
-  Map<String, dynamic> oScheduleDate = {}; // 일정의 from-to 저장
+  // 화면에 박스 표시 될 날짜(from-to)
+  final Map<String, dynamic> _oUserSelectedDate = {};
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
 
-    // 초기 실행 시 현재 일자 정보로 디폴트 값 지정
-    _sCurYear = _oSelectedDate.year.toString();
-    _sCurMonth = _oSelectedDate.month.toString().padLeft(2, '0');
-
-    // 사용자가 선택한 인덱스 값 초기화
-    oUserCurSelectedIndex['fromIndex'] = null;
-    oUserCurSelectedIndex['toIndex'] = null;
-
-    oUserCurSelectedFixedIndex['fromIndex'] = null;
-    oUserCurSelectedFixedIndex['toIndex'] = null;
-    oUserCurSelectedFixedDate['year'] = '9999';
-    oUserCurSelectedFixedDate['month'] = '12';
+    _oUserSelectedDate['from'] = DateTime.parse("99991231");
+    _oUserSelectedDate['to'] = DateTime.parse("99991231");
   }
 
   @override
   Widget build(BuildContext context) {
-    fn_getDayInfo(); // 저번달, 이번달, 다음달의 시작 요일, 달의 전체 일수 정보를 구한다.
+    // 이번달 정보 저장
+    _nCurYear = _oSelectedDate.year;
+    _nCurMonth = _oSelectedDate.month;
+    // 이전달 정보 저장
+    _nPreYear = DateUtils.addMonthsToMonthDate(_oSelectedDate, -1).year;
+    _nPreMonth = DateUtils.addMonthsToMonthDate(_oSelectedDate, -1).month;
+    // 다음달 정보 저장
+    _nNextYear = DateUtils.addMonthsToMonthDate(_oSelectedDate, 1).year;
+    _nNextMonth = DateUtils.addMonthsToMonthDate(_oSelectedDate, 1).month;
 
-    debugPrint('---------------------------------------------');
-    debugPrint('_isUserSelected $_isUserSelected');
-    debugPrint("oUserCurSelectedIndex['fromIndex'] ${oUserCurSelectedIndex['fromIndex']}");
-    debugPrint("oUserCurSelectedIndex['toIndex'] ${oUserCurSelectedIndex['toIndex']}");
-    debugPrint('_isUserSelectedFixed $_isUserSelectedFixed');
-    debugPrint("oUserCurSelectedFixedDate['year'] ${oUserCurSelectedFixedDate['year']}");
-    debugPrint("oUserCurSelectedFixedDate['month'] ${oUserCurSelectedFixedDate['month']}");
-    debugPrint("oUserCurSelectedFixedIndex['fromIndex'] ${oUserCurSelectedFixedIndex['fromIndex']}");
-    debugPrint("oUserCurSelectedFixedIndex['toIndex'] ${oUserCurSelectedFixedIndex['toIndex']}");
-    debugPrint('_isAutoSelected $_isAutoSelected');
-    debugPrint('---------------------------------------------');
+    debugPrint('----------------------------------------------------------------');
+    debugPrint('_nCurYear $_nCurYear');
+    debugPrint('_nCurMonth $_nCurMonth');
+    debugPrint('_nPreYear $_nPreYear');
+    debugPrint('_nPreMonth $_nPreMonth');
+    debugPrint('_nNextYear $_nNextYear');
+    debugPrint('_nNextMonth $_nNextMonth');
+    debugPrint('_oUserSelectedDate["from"] ${_oUserSelectedDate['from']}');
+    debugPrint('_oUserSelectedDate["to"] ${_oUserSelectedDate['to']}');
+    debugPrint('----------------------------------------------------------------');
 
     // 공휴일 api 호출
     if (_isKorHolidayApiCall) {
       _korHolidayProvider = Provider.of<KorHolidayProvider>(context, listen: false);
-      _korHolidayProvider.loadKorHolidays(_sCurYear, _sCurMonth);
+      _korHolidayProvider.loadKorHolidays(_nCurYear.toString(), _nCurMonth.toString());
 
       _isKorHolidayApiCall = false;
     }
@@ -110,7 +100,7 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
           // '<' 버튼
           onPressed: () {
             setState(() {
-              fn_setPreMonth(); // 저번달 표시
+              fn_setPreMonth(); // 이전달 변경
             });
           },
           icon: const Icon(
@@ -124,8 +114,7 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
               _selectDate();
             },
             child: Text(
-              '${'$_oSelectedDate'.substring(0, 4)}.'
-              '${'$_oSelectedDate'.substring(5, 7)}',
+              '${_oSelectedDate.year}. ${_oSelectedDate.month.toString().padLeft(2, "0")}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 30.sp,
@@ -138,29 +127,39 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
           // '>' 버튼
           onPressed: () {
             setState(() {
-              fn_setNextMonth(); // 다음달 표시
+              fn_setNextMonth(); // 다음달 변경
             });
           },
           icon: const Icon(
             Icons.navigate_next,
           ),
         ),
-        // TextButton(
-        //   onPressed: () {
-        //     Navigator.of(context).push(
-        //       MaterialPageRoute(
-        //         builder: (BuildContext context) => const CalendarAddSchedule(),
-        //       ),
-        //     );
-        //   },
-        //   child: const Text(
-        //     '+',
-        //     style: TextStyle(
-        //       fontSize: 30,
-        //       color: Colors.black,
-        //     ),
-        //   ),
-        // )
+        IconButton(
+          onPressed: () {
+            setState(() {
+              // 초기화
+              _oUserSelectedDate['from'] = DateTime.parse("99991231");
+              _oUserSelectedDate['to'] = DateTime.parse("99991231");
+            });
+          },
+          icon: const Icon(
+            Icons.history,
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            setState(() {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) => const CalendarAddSchedule(),
+                ),
+              );
+            });
+          },
+          icon: const Icon(
+            Icons.view_list,
+          ),
+        ),
       ],
     );
   }
@@ -237,6 +236,7 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
         if (_oSelectedDate.year != pickDate.year) {
           _isKorHolidayApiCall = true; // 년도가 바뀌면 공휴일 api 호출
         }
+
         _oSelectedDate = pickDate;
       });
     }
@@ -326,11 +326,6 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
       _oKorHolidaysindex[_korHolidayProvider.korHolidays[i].locdate] = i; // ex) key:20240101, value:0
     }
 
-    oScheduleDate = {};
-    oScheduleDate['fromDate'] = '20240905'; // 테스트
-    oScheduleDate['toDate'] = '20240908'; // 테스트
-    String sScheduleJson = jsonEncode(oScheduleDate);
-
     return Expanded(
       child: GestureDetector(
         onPanUpdate: (DragUpdateDetails details) {
@@ -342,14 +337,12 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
         },
         onPanEnd: (DragEndDetails detail) {
           if (sDragDx == 'R') {
-            // 오른쪽 스와이프 시 저번달 표시
             setState(() {
-              fn_setPreMonth();
+              fn_setPreMonth(); // 이전달 변경
             });
           } else {
-            // 왼쪽 스와이프 시 다음달 표시
             setState(() {
-              fn_setNextMonth();
+              fn_setNextMonth(); // 다음달 변경
             });
           }
         },
@@ -364,16 +357,16 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  fn_setUserSelectedIndex(index); // 사용자가 선택한 인덱스 값 저장
+                  fn_setUserSelectedDate(index); // 사용자 일자 선택 저장
                 });
               },
               child: CalendarDay(
-                sCurYear: _sCurYear,
-                sCurMonth: _sCurMonth,
+                nCurYear: _nCurYear,
+                nCurMonth: _nCurMonth,
                 nGridIndex: index,
-                jCurSelectedIndex: jsonEncode(oUserCurSelectedIndex),
+                dSelectedFromDate: _oUserSelectedDate['from'],
+                dSelectedToDate: _oUserSelectedDate['to'],
                 jKorHolidays: '', // 공휴일 api 정보(json String)
-                jScheduleDate: sScheduleJson, // 위젯에 표시할 스케쥴 정보(from-to)
               ),
             );
           },
@@ -382,182 +375,43 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
     );
   }
 
-  /*
-    저번달, 이번달, 다음달의 시작 요일, 달의 전체 일수 정보를 구한다.
-   */
-  void fn_getDayInfo() {
-    // 이번달 정보 저장
-    _sCurYear = _oSelectedDate.year.toString();
-    _sCurMonth = _oSelectedDate.month.toString().padLeft(2, '0');
-    // 이전달 정보 저장
-    _sPreYear = DateUtils.addMonthsToMonthDate(DateTime.parse('$_sCurYear${_sCurMonth}01'), -1).year.toString();
-    _sPreMonth = DateUtils.addMonthsToMonthDate(DateTime.parse('$_sCurYear${_sCurMonth}01'), -1).month.toString().padLeft(2, '0');
-    // 다음달 정보 저장
-    _sNextYear = DateUtils.addMonthsToMonthDate(DateTime.parse('$_sCurYear${_sCurMonth}01'), 1).year.toString();
-    _sNextMonth = DateUtils.addMonthsToMonthDate(DateTime.parse('$_sCurYear${_sCurMonth}01'), 1).month.toString().padLeft(2, '0');
-
-    // 인덱스 선택 후 달을 변경했을 시, 값을 저장해 놓고 해당 달에 들어오면 저장된 인덱스 값으로 다시 박스 표시
-    if (_isUserSelectedFixed && oUserCurSelectedFixedIndex['fromIndex'] != null && oUserCurSelectedFixedIndex['toIndex'] != null) {
-      if (_sCurYear == oUserCurSelectedFixedDate['year'] && _sCurMonth == oUserCurSelectedFixedDate['month']) {
-        // 저장되어 있는 인덱스 값으로 박스 표시
-        _isUserSelected = true;
-        oUserCurSelectedIndex['fromIndex'] = oUserCurSelectedFixedIndex['fromIndex'];
-        oUserCurSelectedIndex['toIndex'] = oUserCurSelectedFixedIndex['toIndex'];
-
-        // 달 변경 후 다시 돌아왔을 때 표시 하기 위한 고정 일자 값 초기화
-        _isUserSelectedFixed = false;
-        oUserCurSelectedFixedIndex['fromIndex'] = null;
-        oUserCurSelectedFixedIndex['toIndex'] = null;
-        oUserCurSelectedFixedDate['year'] = '9999';
-        oUserCurSelectedFixedDate['month'] = '12';
-      }
-    }
-  }
-
-  /*
-    사용자가 선택한 인덱스 값 저장
-    [param]
-    index : GridView index
-   */
-  void fn_setUserSelectedIndex(int index) {
-    // 인덱스가 null 값이 들어오면 전체 초기화
-    if (index == null) {
-      _isUserSelected = false; // 사용자 일자 선택 여부
-      oUserCurSelectedIndex['fromIndex'] = null;
-      oUserCurSelectedIndex['toIndex'] = null;
+  void fn_setUserSelectedDate(int pnIndex) {
+    // 사용자 일자 선택 저장
+    DateTime dSelectedDate = gfn_getIndexToDate(context, _nCurYear.toString(), _nCurMonth.toString(), pnIndex);
+    if (_oUserSelectedDate['from'] == DateTime.parse("99991231") && _oUserSelectedDate['to'] == DateTime.parse("99991231")) {
+      // 초기 선택 했을 때, from to 셋팅
+      _oUserSelectedDate['from'] = dSelectedDate;
+      _oUserSelectedDate['to'] = dSelectedDate;
+    } else if (dSelectedDate.isBefore(_oUserSelectedDate['from'])) {
+      // from 보다 작은 일자 선택하면 무시
+      debugPrint("_oUserSelectedDate['from']값 보다 선택한 일자가 작음");
+      return;
+    } else if (_oUserSelectedDate['from'] == dSelectedDate ||
+        _oUserSelectedDate['to'] == dSelectedDate ||
+        dSelectedDate.isAfter(_oUserSelectedDate['from']) && dSelectedDate.isBefore(_oUserSelectedDate['to'])) {
+      // from && to && 그 사이 일자를 선택 했을 경우 초기화
+      _oUserSelectedDate['from'] = DateTime.parse("99991231");
+      _oUserSelectedDate['to'] = DateTime.parse("99991231");
     } else {
-      if (oUserCurSelectedIndex['fromIndex'] == null || (_isUserSelectedFixed && !_isAutoSelected)) {
-        // _isUserSelectedFixed && !_isAutoSelected => 사용자가 다른 달에서 선택한 값이 표시되는 경우에 그 날짜를 한번더 클릭하면 초기화 되도록 하는 조건
-        _isUserSelected = true; // 사용자 일자 선택 여부
-        // 처음 클릭한 경우 from-to 셋팅
-        oUserCurSelectedIndex['fromIndex'] = index;
-        oUserCurSelectedIndex['toIndex'] = index;
-        // 달 변경 후 다시 돌아왔을 때 표시 하기 위한 고정 일자 값 초기화
-        _isUserSelectedFixed = false;
-        oUserCurSelectedFixedIndex['fromIndex'] = null;
-        oUserCurSelectedFixedIndex['toIndex'] = null;
-        oUserCurSelectedFixedDate['year'] = '9999';
-        oUserCurSelectedFixedDate['month'] = '12';
-      } else if (oUserCurSelectedIndex['fromIndex'] != null) {
-        if (oUserCurSelectedIndex['fromIndex'] > index) {
-          // 두번째 클릭한 인덱스가 from보다 작으면 무시
-          debugPrint('[oUserCurSelectedIndex["fromIndex"] > index Return]');
-          return;
-        } else if (oUserCurSelectedIndex['fromIndex'] <= index && oUserCurSelectedIndex['toIndex'] >= index) {
-          // 선택한 인덱스들을 한번 더 선택하면 현재 선택한 인덱스 초기화
-          _isUserSelected = false; // 사용자 일자 선택 여부
-          oUserCurSelectedIndex['fromIndex'] = null;
-          oUserCurSelectedIndex['toIndex'] = null;
-          // 달 변경 후 다시 돌아왔을 때 표시 하기 위한 고정 일자 값 초기화
-          _isUserSelectedFixed = false;
-          oUserCurSelectedFixedIndex['fromIndex'] = null;
-          oUserCurSelectedFixedIndex['toIndex'] = null;
-          oUserCurSelectedFixedDate['year'] = '9999';
-          oUserCurSelectedFixedDate['month'] = '12';
-          _isAutoSelected = false; // 사용자가 선택한 from 또는 to 인덱스가 다른 달과 겹쳐있을 경우, 달 변경 시 자동으로 선택됬는지 여부
-        } else {
-          // to 인덱스 셋팅
-          _isUserSelected = true; // 사용자 일자 선택 여부
-          oUserCurSelectedIndex['toIndex'] = index;
-        }
-      }
+      _oUserSelectedDate['to'] = dSelectedDate;
     }
   }
 
-  /*
-    이전달 정보 셋팅
-   */
   void fn_setPreMonth() {
+    // 이전달 변경
     String sFullDate = '';
-    if (_oSelectedDate.year.toString() != _sPreYear) {
+    if (_oSelectedDate.year != _nPreYear) {
       _isKorHolidayApiCall = true; // 년도가 바뀌면 공휴일 api 호출
     }
-
-    if(oUserCurSelectedIndex['fromIndex'] != null && oUserCurSelectedIndex['toIndex'] != null) {
-      // 사용자가 선택한 값들이 존재 하면 저장(달 변경 후 다시 돌아왔을 때 표시하기 위함)
-      _isUserSelectedFixed = true;
-      oUserCurSelectedFixedIndex['fromIndex'] = oUserCurSelectedIndex['fromIndex'];
-      oUserCurSelectedFixedIndex['toIndex'] = oUserCurSelectedIndex['toIndex'];
-      oUserCurSelectedFixedDate['year'] = _sCurYear;
-      oUserCurSelectedFixedDate['month'] = _sCurMonth;
-
-      // from인덱스의 달이 이번달과 다르면 이전달로 넘어갔을 때 표시되도록 셋팅
-      if (gfn_getIndexToDate(context, _sCurYear, _sCurMonth, oUserCurSelectedIndex['fromIndex']).month.toString().padLeft(2, "0") != _sCurMonth) {
-        fn_setPreMonthDiffIndex(oUserCurSelectedIndex['fromIndex'], oUserCurSelectedIndex['toIndex']); // 현재 달이 아닌 달의 일자에 대한 인덱스 값 저장
-      } else {
-        _isUserSelected = false;
-        oUserCurSelectedIndex['fromIndex'] = null;
-        oUserCurSelectedIndex['toIndex'] = null;
-      }
-    }
-
-    sFullDate = _sPreYear + _sPreMonth + 01.toString().padLeft(2, '0');
-    _oSelectedDate = DateTime.parse(sFullDate);
+    _oSelectedDate = DateUtils.addMonthsToMonthDate(_oSelectedDate, -1);
   }
 
-  /*
-    다음달 정보 셋팅
-   */
   void fn_setNextMonth() {
+    // 다음달 변경
     String sFullDate = '';
-    if (_oSelectedDate.year.toString() != _sNextYear) {
+    if (_oSelectedDate.year != _nNextYear) {
       _isKorHolidayApiCall = true; // 년도가 바뀌면 공휴일 api 호출
     }
-
-    if(oUserCurSelectedIndex['fromIndex'] != null && oUserCurSelectedIndex['toIndex'] != null) {
-      // 사용자가 선택한 값들이 존재 하면 저장(달 변경 후 다시 돌아왔을 때 표시하기 위함)
-      _isUserSelectedFixed = true;
-      oUserCurSelectedFixedIndex['fromIndex'] = oUserCurSelectedIndex['fromIndex'];
-      oUserCurSelectedFixedIndex['toIndex'] = oUserCurSelectedIndex['toIndex'];
-      oUserCurSelectedFixedDate['year'] = _sCurYear;
-      oUserCurSelectedFixedDate['month'] = _sCurMonth;
-
-      // to인덱스의 달이 이번달과 다르면 다음달로 넘어갔을 때 표시되도록 셋팅
-      if (gfn_getIndexToDate(context, _sCurYear, _sCurMonth, oUserCurSelectedIndex['toIndex']).month.toString().padLeft(2, "0") != _sCurMonth) {
-        fn_setNextMonthDiffIndex(oUserCurSelectedIndex['fromIndex'], oUserCurSelectedIndex['toIndex']); // 현재 달이 아닌 달의 일자에 대한 인덱스 값 저장
-      } else {
-        // 사용자 선택 값 초기화
-        _isUserSelected = false;
-        oUserCurSelectedIndex['fromIndex'] = null;
-        oUserCurSelectedIndex['toIndex'] = null;
-      }
-    }
-
-    sFullDate = _sNextYear + _sNextMonth + 01.toString().padLeft(2, '0');
-    _oSelectedDate = DateTime.parse(sFullDate);
-  }
-
-  /*
-    선택 된 일수가 이전달 또는 다음달과 겹쳐있을 때,
-    이전달로 넘어갔을 때 박스를 선택된 걸로 보이게 한다
-   */
-  void fn_setPreMonthDiffIndex(int fromIndex, int toIndex) {
-    DateTime dCurMonthFromDate = gfn_getIndexToDate(context, _sCurYear, _sCurMonth, fromIndex);
-    DateTime dCurMonthToDate = gfn_getIndexToDate(context, _sCurYear, _sCurMonth, toIndex);
-
-    int nPreMonthFromIndex = gfn_getDateToIndex(context, _sPreYear, _sPreMonth, dCurMonthFromDate);
-    int nPreMonthToIndex = gfn_getDateToIndex(context, _sPreYear, _sPreMonth, dCurMonthToDate);
-
-    _isAutoSelected = true; // 사용자가 선택한 from 또는 to 인덱스가 다른 달과 겹쳐있을 경우, 달 변경 시 자동으로 선택됬는지 여부
-    _isUserSelected = false; // 이전달에서 다시 원래달로 넘어올 때 이전달에서 자동 선택된 값은 저장되지 않도록 false 로 셋팅
-    oUserCurSelectedIndex['fromIndex'] = nPreMonthFromIndex;
-    oUserCurSelectedIndex['toIndex'] = nPreMonthToIndex;
-  }
-
-  /*
-    선택 된 일수가 이전달 또는 다음달과 겹쳐있을 때,
-    다음달로 넘어갔을 때 박스를 선택된 걸로 보이게 한다
-   */
-  void fn_setNextMonthDiffIndex(int fromIndex, int toIndex) {
-    DateTime dCurMonthFromDate = gfn_getIndexToDate(context, _sCurYear, _sCurMonth, fromIndex);
-    DateTime dCurMonthToDate = gfn_getIndexToDate(context, _sCurYear, _sCurMonth, toIndex);
-
-    int nNextMonthFromIndex = gfn_getDateToIndex(context, _sNextYear, _sNextMonth, dCurMonthFromDate);
-    int nNextMonthToIndex = gfn_getDateToIndex(context, _sNextYear, _sNextMonth, dCurMonthToDate);
-
-    _isAutoSelected = true; // 사용자가 선택한 from 또는 to 인덱스가 다른 달과 겹쳐있을 경우, 달 변경 시 자동으로 선택됬는지 여부
-    _isUserSelected = false; // 다시 원래달로 넘어올 때 자동으로 선택된 값은 고정 되지 않도록 false 로 셋팅
-    oUserCurSelectedIndex['fromIndex'] = nNextMonthFromIndex;
-    oUserCurSelectedIndex['toIndex'] = nNextMonthToIndex;
+    _oSelectedDate = DateUtils.addMonthsToMonthDate(_oSelectedDate, 1);
   }
 }

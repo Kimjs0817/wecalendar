@@ -8,28 +8,26 @@ import 'package:wecalendar/common/function/common_function.dart';
 class CalendarDay extends StatelessWidget {
   const CalendarDay({
     super.key,
-    required this.sCurYear,
-    required this.sCurMonth,
+    required this.nCurYear,
+    required this.nCurMonth,
     required this.nGridIndex,
-    required this.jCurSelectedIndex,
+    required this.dSelectedFromDate,
+    required this.dSelectedToDate,
     required this.jKorHolidays,
-    required this.jScheduleDate,
   });
 
-  final String sCurYear;
-  final String sCurMonth;
+  final int nCurYear;
+  final int nCurMonth;
   final int nGridIndex;
-  final String jCurSelectedIndex; // 사용자가 현재 선택한 인덱스
+  final DateTime dSelectedFromDate; // 선택한 일자(from)
+  final DateTime dSelectedToDate; // 선택한 일자(from)
   final String jKorHolidays; // 공휴일 api 정보(json String)
-  final String jScheduleDate; // 위젯에 표시할 스케쥴 정보(from-to)
 
   @override
   Widget build(BuildContext context) {
-    DateTime dDate = gfn_getIndexToDate(context, sCurYear, sCurMonth, nGridIndex);
-    String sWeek = DateFormat("E", "ko_KR").format(dDate);
-    Color oTextColor = Colors.black;
-    Color oBoxColor = Colors.white;
+    DateTime dDate = gfn_getIndexToDate(context, nCurYear.toString(), nCurMonth.toString(), nGridIndex);
 
+    Color oBoxColor = Colors.white;
     Map<String, dynamic> oBoxBorderColor = {}; // 박스 테두리 색깔
     oBoxBorderColor["leftBorderColors"] = Colors.white;
     oBoxBorderColor["rightBorderColors"] = Colors.white;
@@ -47,17 +45,6 @@ class CalendarDay extends StatelessWidget {
     oBoxBorderRadius["topRight"] = const Radius.circular(0);
 
     String sDateName = "", sIsHoliday = "";
-    Map<String, dynamic> oScheduleDate = {};
-    Map<String, dynamic> oUserSelectedIndex = {};
-
-    // debugPrint("-------------------------");
-    // debugPrint("sCurYear : $sCurYear");
-    // debugPrint("sCurMonth : $sCurMonth");
-    // debugPrint("nGridIndex : $nGridIndex");
-    // debugPrint("jPreSelectedIndex : $jPreSelectedIndex");
-    // debugPrint("jCurSelectedIndex : $jCurSelectedIndex");
-    // debugPrint("jKorHolidays : $jKorHolidays");
-    // debugPrint("jScheduleDate : $jScheduleDate");
 
     if (jKorHolidays != "") {
       Map<String, dynamic> oKorHolidays = jsonDecode(jKorHolidays);
@@ -65,7 +52,6 @@ class CalendarDay extends StatelessWidget {
       sDateName = oKorHolidays["dateName"];
     }
 
-    // 인덱스 값으로 변경 예정
     // if (jScheduleDate != "") {
     //   oScheduleDate = jsonDecode(jScheduleDate);
     //   if ((dDate == DateTime.parse(oScheduleDate["fromDate"]) || dDate == DateTime.parse(oScheduleDate["toDate"])) ||
@@ -94,76 +80,85 @@ class CalendarDay extends StatelessWidget {
     //   }
     // }
 
-    if (jCurSelectedIndex != "") {
-      oUserSelectedIndex = jsonDecode(jCurSelectedIndex);
-      if(oUserSelectedIndex["toIndex"] != null && oUserSelectedIndex["toIndex"] != null) {
-        int nIndexCnt = oUserSelectedIndex["toIndex"] - oUserSelectedIndex["fromIndex"];
-        // 사용자가 선택한 인덱스는 박스 색깔 변경
-        if (oUserSelectedIndex["fromIndex"] <= nGridIndex && oUserSelectedIndex["toIndex"] >= nGridIndex) {
-          if (oUserSelectedIndex["fromIndex"] == nGridIndex) {
-            oBoxColor = Colors.blue.shade100;
-          } else if (oUserSelectedIndex["toIndex"] == nGridIndex) {
-            oBoxColor = Colors.blue.shade100;
-          } else {
-            oBoxColor = Colors.blue.shade50;
-          }
+    if(dSelectedFromDate != DateTime.parse("99991231") && dSelectedToDate != DateTime.parse("99991231")) {
+      DateTime dGridDate = gfn_getIndexToDate(context, nCurYear.toString(), nCurMonth.toString(), nGridIndex);
+      int nDateCnt = gfn_getDateToIndex(context, nCurYear.toString(), nCurMonth.toString(), dSelectedToDate) -
+          gfn_getDateToIndex(context, nCurYear.toString(), nCurMonth.toString(), dSelectedFromDate);
+      if (dSelectedFromDate == dGridDate || dSelectedToDate == dGridDate || dGridDate.isAfter(dSelectedFromDate) && dGridDate.isBefore(dSelectedToDate)) {
+        // 선택한 일자가 from-to에 속해 있을 때 배경 색깔 변경
+        if (dSelectedFromDate == dGridDate) {
+          oBoxColor = Colors.blue.shade100;
+          oBoxBorderColor["leftBorderColors"] = Colors.blue.shade100;
+          oBoxBorderColor["rightBorderColors"] = Colors.blue.shade100;
+          oBoxBorderColor["topBorderColors"] = Colors.blue.shade100;
+          oBoxBorderColor["bottomBorderColors"] = Colors.blue.shade100;
+        } else if (dSelectedToDate == dGridDate) {
+          oBoxColor = Colors.blue.shade100;
+          oBoxBorderColor["leftBorderColors"] = Colors.blue.shade100;
+          oBoxBorderColor["rightBorderColors"] = Colors.blue.shade100;
+          oBoxBorderColor["topBorderColors"] = Colors.blue.shade100;
+          oBoxBorderColor["bottomBorderColors"] = Colors.blue.shade100;
+        } else {
+          oBoxColor = Colors.blue.shade50;
           oBoxBorderColor["leftBorderColors"] = Colors.blue.shade50;
           oBoxBorderColor["rightBorderColors"] = Colors.blue.shade50;
           oBoxBorderColor["topBorderColors"] = Colors.blue.shade50;
           oBoxBorderColor["bottomBorderColors"] = Colors.blue.shade50;
-          oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
-          oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
-          oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
-          oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
+        }
+        oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
+        oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
+        oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
+        oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
+      }
 
-          if (nIndexCnt == 0) {
-            oBoxBorderRadius["topLeft"] = const Radius.circular(10);
-            oBoxBorderRadius["topRight"] = const Radius.circular(10);
-            oBoxBorderRadius["bottomLeft"] = const Radius.circular(10);
-            oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
-          } else if ((nIndexCnt >= 7)) {
-            // 선택한 인덱스가 7개 이상이면 2줄로 넘어가기 때문에 테두리 자연스럽게 표시
-            if (oUserSelectedIndex["fromIndex"] == nGridIndex) {
-              oBoxBorderRadius["topLeft"] = const Radius.circular(10);
-              oBoxBorderRadius["topRight"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
-            } else if (oUserSelectedIndex["toIndex"] == nGridIndex) {
-              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["topRight"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
-            } else {
-              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["topRight"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
-            }
-          } else {
-            // 선택한 인덱스가 2~6개이면 한줄 표시
-            if (oUserSelectedIndex["fromIndex"] == nGridIndex) {
-              oBoxBorderRadius["topLeft"] = const Radius.circular(10);
-              oBoxBorderRadius["topRight"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomLeft"] = const Radius.circular(10);
-              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
-            } else if (oUserSelectedIndex["toIndex"] == nGridIndex) {
-              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["topRight"] = const Radius.circular(10);
-              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
-            } else {
-              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["topRight"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
-              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
-            }
-          }
+      if (nDateCnt == 0) {
+        oBoxBorderRadius["topLeft"] = const Radius.circular(10);
+        oBoxBorderRadius["topRight"] = const Radius.circular(10);
+        oBoxBorderRadius["bottomLeft"] = const Radius.circular(10);
+        oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
+      } else if ((nDateCnt >= 7)) {
+        // 선택한 인덱스가 7개 이상이면 2줄로 넘어가기 때문에 테두리 자연스럽게 표시
+        if (dSelectedFromDate == dGridDate) {
+          oBoxBorderRadius["topLeft"] = const Radius.circular(10);
+          oBoxBorderRadius["topRight"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+        } else if (dSelectedToDate == dGridDate) {
+          oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["topRight"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
+        } else {
+          oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["topRight"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+        }
+      } else {
+        // 선택한 인덱스가 2~6개이면 한줄 표시
+        if (dSelectedFromDate == dGridDate) {
+          oBoxBorderRadius["topLeft"] = const Radius.circular(10);
+          oBoxBorderRadius["topRight"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomLeft"] = const Radius.circular(10);
+          oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+        } else if (dSelectedToDate == dGridDate) {
+          oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["topRight"] = const Radius.circular(10);
+          oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
+        } else {
+          oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["topRight"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+          oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
         }
       }
     }
 
     // 일자별 텍스트 컬러 지정
-    if (dDate.month.toString().padLeft(2, "0") != sCurMonth) {
+    String sWeek = DateFormat("E", "ko_KR").format(dDate);
+    Color oTextColor = Colors.black;
+    if (dDate.month != nCurMonth) {
       oTextColor = Colors.grey;
     } else if (sIsHoliday == "Y") {
       oTextColor = Colors.red;
@@ -229,7 +224,7 @@ class CalendarDay extends StatelessWidget {
                 width: 45.w,
                 padding: const EdgeInsets.fromLTRB(10, 0, 0, 0), // left, top, right, bottom
                 child: Text(
-                  gfn_getIndexToDate(context, sCurYear, sCurMonth, nGridIndex).day.toString(),
+                  gfn_getIndexToDate(context, nCurYear.toString(), nCurMonth.toString(), nGridIndex).day.toString(),
                   style: TextStyle(
                     fontSize: 10.sp,
                     color: oTextColor,
