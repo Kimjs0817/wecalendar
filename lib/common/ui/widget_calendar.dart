@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -399,7 +397,6 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
 
   void fn_setPreMonth() {
     // 이전달 변경
-    String sFullDate = '';
     if (_oSelectedDate.year != _nPreYear) {
       _isKorHolidayApiCall = true; // 년도가 바뀌면 공휴일 api 호출
     }
@@ -408,7 +405,6 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
 
   void fn_setNextMonth() {
     // 다음달 변경
-    String sFullDate = '';
     if (_oSelectedDate.year != _nNextYear) {
       _isKorHolidayApiCall = true; // 년도가 바뀌면 공휴일 api 호출
     }
