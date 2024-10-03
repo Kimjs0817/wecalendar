@@ -11,7 +11,6 @@ class CalendarDay extends StatelessWidget {
     required this.sCurYear,
     required this.sCurMonth,
     required this.nGridIndex,
-    required this.jPreSelectedIndex,
     required this.jCurSelectedIndex,
     required this.jKorHolidays,
     required this.jScheduleDate,
@@ -20,7 +19,6 @@ class CalendarDay extends StatelessWidget {
   final String sCurYear;
   final String sCurMonth;
   final int nGridIndex;
-  final String jPreSelectedIndex; // 사용자가 이전에 선택한 인덱스
   final String jCurSelectedIndex; // 사용자가 현재 선택한 인덱스
   final String jKorHolidays; // 공휴일 api 정보(json String)
   final String jScheduleDate; // 위젯에 표시할 스케쥴 정보(from-to)
@@ -42,6 +40,11 @@ class CalendarDay extends StatelessWidget {
     oBoxBorderWidth["rightBorderWidth"] = 0.toDouble();
     oBoxBorderWidth["topBorderWidth"] = 0.toDouble();
     oBoxBorderWidth["bottomBorderWidth"] = 0.toDouble();
+    Map<String, dynamic> oBoxBorderRadius = {}; // 박스 테두리 둥글게
+    oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+    oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+    oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+    oBoxBorderRadius["topRight"] = const Radius.circular(0);
 
     String sDateName = "", sIsHoliday = "";
     Map<String, dynamic> oScheduleDate = {};
@@ -62,50 +65,103 @@ class CalendarDay extends StatelessWidget {
       sDateName = oKorHolidays["dateName"];
     }
 
-    if (jScheduleDate != "") {
-      oScheduleDate = jsonDecode(jScheduleDate);
-      if (dDate == DateTime.parse(oScheduleDate["fromDate"]) || dDate == DateTime.parse(oScheduleDate["toDate"])) {
-        // 해당 위젯의 일자가 일정의 from일자 또는 to일자와 같을 때
-        oBoxColor = Colors.pink.shade50;
-        oBoxBorderColor["leftBorderColors"] = Colors.pink.shade50;
-        oBoxBorderColor["rightBorderColors"] = Colors.pink.shade50;
-        oBoxBorderColor["topBorderColors"] = Colors.pink.shade50;
-        oBoxBorderColor["bottomBorderColors"] = Colors.pink.shade50;
-        oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
-      } else if (dDate.isAfter(DateTime.parse(oScheduleDate["fromDate"])) && dDate.isBefore(DateTime.parse(oScheduleDate["toDate"]))) {
-        // 해당 위젯의 일자가 일정의 from일자와 to일자 사이에 있을 때
-        oBoxColor = Colors.pink.shade50;
-        oBoxBorderColor["leftBorderColors"] = Colors.pink.shade50;
-        oBoxBorderColor["rightBorderColors"] = Colors.pink.shade50;
-        oBoxBorderColor["topBorderColors"] = Colors.pink.shade50;
-        oBoxBorderColor["bottomBorderColors"] = Colors.pink.shade50;
-        oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
-      }
-    }
+    // 인덱스 값으로 변경 예정
+    // if (jScheduleDate != "") {
+    //   oScheduleDate = jsonDecode(jScheduleDate);
+    //   if ((dDate == DateTime.parse(oScheduleDate["fromDate"]) || dDate == DateTime.parse(oScheduleDate["toDate"])) ||
+    //       dDate.isAfter(DateTime.parse(oScheduleDate["fromDate"])) && dDate.isBefore(DateTime.parse(oScheduleDate["toDate"]))) {
+    //     // 해당 위젯의 일자가 일정의 from일자와 to일자에 속해있을 때
+    //     oBoxColor = Colors.pink.shade50;
+    //     oBoxBorderColor["leftBorderColors"] = Colors.pink.shade50;
+    //     oBoxBorderColor["rightBorderColors"] = Colors.pink.shade50;
+    //     oBoxBorderColor["topBorderColors"] = Colors.pink.shade50;
+    //     oBoxBorderColor["bottomBorderColors"] = Colors.pink.shade50;
+    //     oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
+    //     oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
+    //     oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
+    //     oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
+    //
+    //     if (dDate == DateTime.parse(oScheduleDate["fromDate"])) {
+    //       oBoxBorderRadius["leftRadius"] = const Radius.circular(10);
+    //       oBoxBorderRadius["rightRadius"] = const Radius.circular(0);
+    //     } else if (dDate == DateTime.parse(oScheduleDate["toDate"])) {
+    //       oBoxBorderRadius["leftRadius"] = const Radius.circular(0);
+    //       oBoxBorderRadius["rightRadius"] = const Radius.circular(10);
+    //     } else {
+    //       oBoxBorderRadius["leftRadius"] = const Radius.circular(0);
+    //       oBoxBorderRadius["rightRadius"] = const Radius.circular(0);
+    //     }
+    //   }
+    // }
 
     if (jCurSelectedIndex != "") {
       oUserSelectedIndex = jsonDecode(jCurSelectedIndex);
+      if(oUserSelectedIndex["toIndex"] != null && oUserSelectedIndex["toIndex"] != null) {
+        int nIndexCnt = oUserSelectedIndex["toIndex"] - oUserSelectedIndex["fromIndex"];
+        // 사용자가 선택한 인덱스는 박스 색깔 변경
+        if (oUserSelectedIndex["fromIndex"] <= nGridIndex && oUserSelectedIndex["toIndex"] >= nGridIndex) {
+          if (oUserSelectedIndex["fromIndex"] == nGridIndex) {
+            oBoxColor = Colors.blue.shade100;
+          } else if (oUserSelectedIndex["toIndex"] == nGridIndex) {
+            oBoxColor = Colors.blue.shade100;
+          } else {
+            oBoxColor = Colors.blue.shade50;
+          }
+          oBoxBorderColor["leftBorderColors"] = Colors.blue.shade50;
+          oBoxBorderColor["rightBorderColors"] = Colors.blue.shade50;
+          oBoxBorderColor["topBorderColors"] = Colors.blue.shade50;
+          oBoxBorderColor["bottomBorderColors"] = Colors.blue.shade50;
+          oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
+          oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
+          oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
+          oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
 
-      // 사용자가 선택한 인덱스는 박스 색깔 변경
-      if(oUserSelectedIndex["fromIndex"] <= nGridIndex && oUserSelectedIndex["toIndex"] >= nGridIndex) {
-        oBoxColor = Colors.lightBlueAccent;
-        oBoxBorderColor["leftBorderColors"] = Colors.lightBlueAccent;
-        oBoxBorderColor["rightBorderColors"] = Colors.lightBlueAccent;
-        oBoxBorderColor["topBorderColors"] = Colors.lightBlueAccent;
-        oBoxBorderColor["bottomBorderColors"] = Colors.lightBlueAccent;
-        oBoxBorderWidth["leftBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["rightBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["topBorderWidth"] = 1.toDouble();
-        oBoxBorderWidth["bottomBorderWidth"] = 1.toDouble();
+          if (nIndexCnt == 0) {
+            oBoxBorderRadius["topLeft"] = const Radius.circular(10);
+            oBoxBorderRadius["topRight"] = const Radius.circular(10);
+            oBoxBorderRadius["bottomLeft"] = const Radius.circular(10);
+            oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
+          } else if ((nIndexCnt >= 7)) {
+            // 선택한 인덱스가 7개 이상이면 2줄로 넘어가기 때문에 테두리 자연스럽게 표시
+            if (oUserSelectedIndex["fromIndex"] == nGridIndex) {
+              oBoxBorderRadius["topLeft"] = const Radius.circular(10);
+              oBoxBorderRadius["topRight"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+            } else if (oUserSelectedIndex["toIndex"] == nGridIndex) {
+              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["topRight"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
+            } else {
+              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["topRight"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+            }
+          } else {
+            // 선택한 인덱스가 2~6개이면 한줄 표시
+            if (oUserSelectedIndex["fromIndex"] == nGridIndex) {
+              oBoxBorderRadius["topLeft"] = const Radius.circular(10);
+              oBoxBorderRadius["topRight"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomLeft"] = const Radius.circular(10);
+              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+            } else if (oUserSelectedIndex["toIndex"] == nGridIndex) {
+              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["topRight"] = const Radius.circular(10);
+              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomRight"] = const Radius.circular(10);
+            } else {
+              oBoxBorderRadius["topLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["topRight"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomLeft"] = const Radius.circular(0);
+              oBoxBorderRadius["bottomRight"] = const Radius.circular(0);
+            }
+          }
+        }
       }
     }
-    
+
     // 일자별 텍스트 컬러 지정
     if (dDate.month.toString().padLeft(2, "0") != sCurMonth) {
       oTextColor = Colors.grey;
@@ -139,25 +195,32 @@ class CalendarDay extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-          color: oBoxColor,
-          border: Border(
-            left: BorderSide(
-              color: oBoxBorderColor["leftBorderColors"],
-              width: oBoxBorderWidth["leftBorderWidth"],
-            ),
-            right: BorderSide(
-              color: oBoxBorderColor["rightBorderColors"],
-              width: oBoxBorderWidth["rightBorderWidth"],
-            ),
-            top: BorderSide(
-              color: oBoxBorderColor["topBorderColors"],
-              width: oBoxBorderWidth["topBorderWidth"],
-            ),
-            bottom: BorderSide(
-              color: oBoxBorderColor["bottomBorderColors"],
-              width: oBoxBorderWidth["bottomBorderWidth"],
-            ),
-          )),
+        color: oBoxColor,
+        border: Border(
+          left: BorderSide(
+            color: oBoxBorderColor["leftBorderColors"],
+            width: oBoxBorderWidth["leftBorderWidth"],
+          ),
+          right: BorderSide(
+            color: oBoxBorderColor["rightBorderColors"],
+            width: oBoxBorderWidth["rightBorderWidth"],
+          ),
+          top: BorderSide(
+            color: oBoxBorderColor["topBorderColors"],
+            width: oBoxBorderWidth["topBorderWidth"],
+          ),
+          bottom: BorderSide(
+            color: oBoxBorderColor["bottomBorderColors"],
+            width: oBoxBorderWidth["bottomBorderWidth"],
+          ),
+        ),
+        borderRadius: BorderRadius.only(
+          topLeft: oBoxBorderRadius["topLeft"],
+          topRight: oBoxBorderRadius["topRight"],
+          bottomLeft: oBoxBorderRadius["bottomLeft"],
+          bottomRight: oBoxBorderRadius["bottomRight"],
+        ),
+      ),
       child: Column(
         children: [
           Row(
