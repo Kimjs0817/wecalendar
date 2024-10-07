@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:wecalendar/common/ui/widget_calendar.dart';
 import 'package:wecalendar/common/ui/widget_schedule_tabbar.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -23,7 +23,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, // 스크롤시 appBar color 색상이 바뀌지 않게 하기 위함
+        scrolledUnderElevation: 0, // 스크롤시 appBar color 색상이 바뀌지 않게 하기 위함
         title: const Text('Calendar'),
       ),
       body: Column(
@@ -53,8 +54,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           boxShadow: [
             BoxShadow(
                 color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 10,
-                blurRadius: 10,
+                spreadRadius: 5,
+                blurRadius: 5,
                 offset: const Offset(0, 5))
           ]),
       child: const WidgetScheduleTabbar(),

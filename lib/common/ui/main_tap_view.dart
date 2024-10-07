@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:wecalendar/common/ui/bottom_navigation_list.dart';
-import 'package:wecalendar/service/ui/calendar_add_schedule.dart';
+import 'package:wecalendar/service/ui/calendar_screen_list.dart';
 import 'package:wecalendar/service/ui/calendar_screen.dart';
 
 class MainTapView extends StatefulWidget {
@@ -71,8 +71,8 @@ class _MainTapViewState extends State<MainTapView>
           controller: _tabController,
           children: const [
             CalendarScreen(),
-            CalendarAddSchedule(), // 임시
-            CalendarAddSchedule(), // 임시
+            CalendarScreenList(), // 임시
+            CalendarScreenList(), // 임시
           ]),
     );
   }

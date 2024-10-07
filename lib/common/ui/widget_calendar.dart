@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:wecalendar/common/function/common_function.dart';
 
+import 'package:wecalendar/common/function/common_function.dart';
 import 'package:wecalendar/common/providers/kor_holiday_provider.dart';
 
 import 'package:wecalendar/common/ui/widget_calendar_day.dart';
-import 'package:wecalendar/service/ui/calendar_add_schedule.dart';
+import 'package:wecalendar/service/ui/calendar_screen_list.dart';
 
 class WidgetCalendar extends StatefulWidget {
   const WidgetCalendar({super.key});
@@ -29,6 +29,8 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
 
   // 화면에 박스 표시 될 날짜(from-to)
   final Map<String, dynamic> _oUserSelectedDate = {};
+  // 화면에 박스 표시 될 날짜(from-to)(스케쥴데이터)
+  final Map<String, dynamic> _oUserScheduleDate = {};
 
   @override
   void initState() {
@@ -37,6 +39,8 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
 
     _oUserSelectedDate['from'] = DateTime.parse("99991231");
     _oUserSelectedDate['to'] = DateTime.parse("99991231");
+    _oUserScheduleDate['from'] = DateTime.parse("99991231");
+    _oUserScheduleDate['to'] = DateTime.parse("99991231");
   }
 
   @override
@@ -60,6 +64,8 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
     debugPrint('_nNextMonth $_nNextMonth');
     debugPrint('_oUserSelectedDate["from"] ${_oUserSelectedDate['from']}');
     debugPrint('_oUserSelectedDate["to"] ${_oUserSelectedDate['to']}');
+    debugPrint('_oUserScheduleDate["from"] ${_oUserScheduleDate['from']}');
+    debugPrint('_oUserScheduleDate["to"] ${_oUserScheduleDate['to']}');
     debugPrint('----------------------------------------------------------------');
 
     // 공휴일 api 호출
@@ -149,7 +155,7 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
             setState(() {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (BuildContext context) => const CalendarAddSchedule(),
+                  builder: (BuildContext context) => const CalendarScreenList(),
                 ),
               );
             });
@@ -318,6 +324,10 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
   Widget CalendarGrid() {
     var sDragDx = '';
 
+    ////////////////////////////////////////////// 테스트 ///////////////////////////////////////////////
+    _oUserScheduleDate['from'] = DateTime.parse("20241014");
+    _oUserScheduleDate['to'] = DateTime.parse("20241022");
+    
     // 공휴일 List 인덱스 정보를 Map 형식으로 저장한다.
     Map<String, int> _oKorHolidaysindex = {};
     for (var i = 0; i < _korHolidayProvider.korHolidays.length; i++) {
@@ -364,6 +374,8 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
                 nGridIndex: index,
                 dSelectedFromDate: _oUserSelectedDate['from'],
                 dSelectedToDate: _oUserSelectedDate['to'],
+                dScheduleFromDate: _oUserScheduleDate['from'],
+                dScheduleToDate: _oUserScheduleDate['to'],
                 jKorHolidays: '', // 공휴일 api 정보(json String)
               ),
             );
@@ -381,9 +393,7 @@ class _WidgetCalendarState extends State<WidgetCalendar> {
       _oUserSelectedDate['from'] = dSelectedDate;
       _oUserSelectedDate['to'] = dSelectedDate;
     } else if (dSelectedDate.isBefore(_oUserSelectedDate['from'])) {
-      // from 보다 작은 일자 선택하면 무시
-      debugPrint("_oUserSelectedDate['from']값 보다 선택한 일자가 작음");
-      return;
+      _oUserSelectedDate['from'] = dSelectedDate;
     } else if (_oUserSelectedDate['from'] == dSelectedDate ||
         _oUserSelectedDate['to'] == dSelectedDate ||
         dSelectedDate.isAfter(_oUserSelectedDate['from']) && dSelectedDate.isBefore(_oUserSelectedDate['to'])) {
